@@ -3,9 +3,10 @@ import { ShoppingCart, Check, ChevronDown, ChevronRight, Plus, Trash2, ListCheck
 import { generateShoppingList } from '../utils/shoppingList';
 import { CATEGORIES } from '../data/ingredientData';
 import { getWeekDays, toDateKey, formatWeekRange } from '../utils/dateUtils';
-import { useLocalStorage } from '../hooks/useLocalStorage';
 import { printShoppingList } from '../utils/printShoppingList';
 import { DEFAULT_STAPLES } from '../data/defaultStaples';
+import { supabase } from '../lib/supabase';
+import { fetchStaples, upsertStaple, deleteStaple, fetchStaplesChecked, setStapleChecked, clearStaplesChecked } from '../lib/db';
 
 // ─── Recipe List ────────────────────────────────────────────────────────────
 
@@ -104,7 +105,6 @@ function RecipeListTab({ mealPlan, recipes, weekStart, checkedItems, onToggleIte
 
   return (
     <div className="space-y-4">
-      {/* Progress */}
       {totalCount > 0 && (
         <div className="bg-white rounded-2xl border border-stone-100 shadow-warm p-4">
           <div className="flex items-center justify-between mb-2">
@@ -188,54 +188,22 @@ function ItemMenu({ onRemove }) {
   );
 }
 
-function StaplesTab({ weekStart, staples, setStaples, weekState, setWeekState }) {
+function StaplesTab({ staples, staplesChecked, onAddStaple, onRemoveStaple, onToggleChecked, onClearChecked }) {
   const [collapsed, setCollapsed] = useState({});
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [newCategory, setNewCategory] = useState('produce');
 
-  const currentWeekKey = toDateKey(weekStart);
-
-  // Reset checked state at the start of each new week
-  useEffect(() => {
-    if (weekState.weekKey !== currentWeekKey) {
-      setWeekState({ weekKey: currentWeekKey, checked: {} });
-    }
-  }, [currentWeekKey]);
-
-  const checked = weekState.checked || {};
-
-  const toggleChecked = (id) => {
-    setWeekState(prev => ({
-      ...prev,
-      checked: { ...prev.checked, [id]: !prev.checked[id] },
-    }));
-  };
-
-  const clearChecked = () => {
-    setWeekState(prev => ({ ...prev, checked: {} }));
-  };
-
   const addItem = () => {
     if (!newName.trim()) return;
-    const item = {
+    onAddStaple({
       id: `st_custom_${Date.now()}`,
       name: newName.trim(),
       category: newCategory,
       isCustom: true,
-    };
-    setStaples(prev => [...prev, item]);
+    });
     setNewName('');
     setAdding(false);
-  };
-
-  const removeItem = (id) => {
-    setStaples(prev => prev.filter(s => s.id !== id));
-    setWeekState(prev => {
-      const next = { ...prev.checked };
-      delete next[id];
-      return { ...prev, checked: next };
-    });
   };
 
   const grouped = useMemo(() => {
@@ -248,12 +216,11 @@ function StaplesTab({ weekStart, staples, setStaples, weekState, setWeekState })
     return groups;
   }, [staples]);
 
-  const checkedCount = staples.filter(s => checked[s.id]).length;
+  const checkedCount = staples.filter(s => staplesChecked[s.id]).length;
   const totalCount = staples.length;
 
   return (
     <div className="space-y-4">
-      {/* Header actions */}
       <div className="bg-white rounded-2xl border border-stone-100 shadow-warm p-4">
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm font-semibold text-stone-700">
@@ -262,7 +229,7 @@ function StaplesTab({ weekStart, staples, setStaples, weekState, setWeekState })
           <div className="flex items-center gap-2">
             <p className="text-xs text-stone-400">{Math.round(totalCount > 0 ? (checkedCount / totalCount) * 100 : 0)}%</p>
             {checkedCount > 0 && (
-              <button onClick={clearChecked} className="text-xs text-orange-500 font-medium hover:text-orange-600">
+              <button onClick={onClearChecked} className="text-xs text-orange-500 font-medium hover:text-orange-600">
                 Uncheck all
               </button>
             )}
@@ -277,12 +244,11 @@ function StaplesTab({ weekStart, staples, setStaples, weekState, setWeekState })
         <p className="text-xs text-stone-400 mt-2">Resets automatically each week</p>
       </div>
 
-      {/* Category sections */}
       {Object.entries(CATEGORIES).map(([catKey, catData]) => {
         const items = grouped[catKey];
         if (!items?.length) return null;
         const isCollapsed = collapsed[catKey];
-        const checkedInCat = items.filter(i => checked[i.id]).length;
+        const checkedInCat = items.filter(i => staplesChecked[i.id]).length;
 
         return (
           <div key={catKey} className={`bg-white rounded-2xl border overflow-hidden shadow-warm ${catData.color}`}>
@@ -301,7 +267,7 @@ function StaplesTab({ weekStart, staples, setStaples, weekState, setWeekState })
             {!isCollapsed && (
               <div className="border-t border-black/[0.04]">
                 {items.map((item, idx) => {
-                  const isChecked = !!checked[item.id];
+                  const isChecked = !!staplesChecked[item.id];
                   return (
                     <div
                       key={item.id}
@@ -309,7 +275,7 @@ function StaplesTab({ weekStart, staples, setStaples, weekState, setWeekState })
                         isChecked ? 'bg-stone-50' : 'hover:bg-black/[0.02]'
                       } ${idx < items.length - 1 ? 'border-b border-black/[0.04]' : ''}`}
                     >
-                      <button onClick={() => toggleChecked(item.id)} className="flex items-center gap-3 flex-1 text-left">
+                      <button onClick={() => onToggleChecked(item.id)} className="flex items-center gap-3 flex-1 text-left">
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                           isChecked ? 'border-green-400 bg-green-400' : 'border-stone-300'
                         }`}>
@@ -319,7 +285,7 @@ function StaplesTab({ weekStart, staples, setStaples, weekState, setWeekState })
                           {item.name}
                         </p>
                       </button>
-                      <ItemMenu onRemove={() => removeItem(item.id)} />
+                      <ItemMenu onRemove={() => onRemoveStaple(item.id)} />
                     </div>
                   );
                 })}
@@ -329,7 +295,6 @@ function StaplesTab({ weekStart, staples, setStaples, weekState, setWeekState })
         );
       })}
 
-      {/* Add item */}
       {adding ? (
         <div className="bg-white rounded-2xl border border-orange-200 shadow-warm p-4 space-y-3">
           <p className="text-sm font-semibold text-stone-700">Add a staple item</p>
@@ -380,8 +345,71 @@ function StaplesTab({ weekStart, staples, setStaples, weekState, setWeekState })
 
 export default function ShoppingList({ mealPlan, recipes, weekStart, checkedItems, onToggleItem, onClearChecked }) {
   const [tab, setTab] = useState('meals');
-  const [staples, setStaples] = useLocalStorage('stapleItems', DEFAULT_STAPLES);
-  const [weekState, setWeekState] = useLocalStorage('staplesWeekState', { weekKey: '', checked: {} });
+  const [staples, setStaples] = useState([]);
+  const [staplesChecked, setStaplesChecked] = useState({});
+
+  const currentWeekKey = toDateKey(weekStart);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function load() {
+      try {
+        const [s, sc] = await Promise.all([fetchStaples(), fetchStaplesChecked(currentWeekKey)]);
+        if (!mounted) return;
+
+        if (s.length === 0) {
+          await Promise.all(DEFAULT_STAPLES.map((item, i) => upsertStaple(item, i)));
+          if (mounted) setStaples(DEFAULT_STAPLES);
+        } else {
+          setStaples(s);
+        }
+        setStaplesChecked(sc);
+      } catch (err) {
+        console.error('Failed to load staples:', err);
+      }
+    }
+
+    load();
+
+    const channel = supabase.channel('staples-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staples' }, async () => {
+        const s = await fetchStaples().catch(() => null);
+        if (mounted && s) setStaples(s);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staples_checked' }, async () => {
+        const sc = await fetchStaplesChecked(currentWeekKey).catch(() => null);
+        if (mounted && sc !== null) setStaplesChecked(sc);
+      })
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [currentWeekKey]);
+
+  const handleAddStaple = (item) => {
+    setStaples(prev => [...prev, item]);
+    upsertStaple(item, staples.length).catch(console.error);
+  };
+
+  const handleRemoveStaple = (id) => {
+    setStaples(prev => prev.filter(s => s.id !== id));
+    setStaplesChecked(prev => { const next = { ...prev }; delete next[id]; return next; });
+    deleteStaple(id).catch(console.error);
+  };
+
+  const handleToggleStapleChecked = (id) => {
+    const newVal = !staplesChecked[id];
+    setStaplesChecked(prev => ({ ...prev, [id]: newVal }));
+    setStapleChecked(id, currentWeekKey, newVal).catch(console.error);
+  };
+
+  const handleClearStaplesChecked = () => {
+    setStaplesChecked({});
+    clearStaplesChecked(currentWeekKey).catch(console.error);
+  };
 
   const weekDays = getWeekDays(weekStart);
   const uniqueRecipes = useMemo(() => {
@@ -397,7 +425,6 @@ export default function ShoppingList({ mealPlan, recipes, weekStart, checkedItem
   const recipeItems = useMemo(() => generateShoppingList(uniqueRecipes), [uniqueRecipes.map(r => r.id).join(',')]);
 
   const handlePrint = () => {
-    const staplesChecked = weekState.checked || {};
     printShoppingList({
       recipeItems: recipeItems.filter(i => !checkedItems[i.id]),
       staples: staples.filter(s => !staplesChecked[s.id]),
@@ -421,7 +448,6 @@ export default function ShoppingList({ mealPlan, recipes, weekStart, checkedItem
         </button>
       </div>
 
-      {/* Tab switcher */}
       <div className="flex gap-2 mb-5 bg-white rounded-2xl p-1.5 border border-stone-100 shadow-warm">
         <button
           onClick={() => setTab('meals')}
@@ -454,11 +480,12 @@ export default function ShoppingList({ mealPlan, recipes, weekStart, checkedItem
         />
       ) : (
         <StaplesTab
-          weekStart={weekStart}
           staples={staples}
-          setStaples={setStaples}
-          weekState={weekState}
-          setWeekState={setWeekState}
+          staplesChecked={staplesChecked}
+          onAddStaple={handleAddStaple}
+          onRemoveStaple={handleRemoveStaple}
+          onToggleChecked={handleToggleStapleChecked}
+          onClearChecked={handleClearStaplesChecked}
         />
       )}
     </div>
