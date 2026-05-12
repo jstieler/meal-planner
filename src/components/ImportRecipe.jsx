@@ -5,12 +5,26 @@ import { estimateNutrition } from '../utils/nutrition';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import AddEditRecipe from './AddEditRecipe';
 
-async function fileToBase64(file) {
+async function compressImage(file, { maxDimension = 1920, quality = 0.85 } = {}) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxDimension || height > maxDimension) {
+        if (width >= height) { height = Math.round(height * maxDimension / width); width = maxDimension; }
+        else { width = Math.round(width * maxDimension / height); height = maxDimension; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      resolve({ base64: dataUrl.split(',')[1], mediaType: 'image/jpeg' });
+    };
+    img.onerror = reject;
+    img.src = url;
   });
 }
 
@@ -198,9 +212,8 @@ export default function ImportRecipe({ onSave, onClose }) {
     }
     if (stagedPhotos.length >= 2) return;
     setError('');
-    const base64 = await fileToBase64(file);
-    const mediaType = file.type || 'image/jpeg';
-    setStagedPhotos(prev => [...prev, { base64, mediaType }]);
+    const compressed = await compressImage(file);
+    setStagedPhotos(prev => [...prev, compressed]);
   }, [apiKey, stagedPhotos.length]);
 
   const handleScan = async () => {
