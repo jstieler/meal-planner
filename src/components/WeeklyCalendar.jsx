@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Moon, Search, Clock, CookingPot, SlidersHorizontal, UtensilsCrossed, Shuffle, Flame } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Moon, Search, Clock, CookingPot, SlidersHorizontal, UtensilsCrossed, Shuffle, Flame, BookOpen } from 'lucide-react';
+import RecipeDetail from './RecipeDetail';
 import { getWeekDays, toDateKey, formatMonthDay, formatWeekRange, isToday, DAY_SHORT, DAYS } from '../utils/dateUtils';
 
 function formatTime(minutes) {
@@ -185,7 +186,7 @@ function RecipePickerModal({ recipes, onSelect, onBusy, onGrill, onDineOut, onCl
   );
 }
 
-function DayCard({ date, dayIndex, plan, recipe, sideRecipe, onClickDay }) {
+function DayCard({ date, dayIndex, plan, recipe, sideRecipe, onClickDay, onViewRecipe }) {
   const dateKey = toDateKey(date);
   const today = isToday(date);
   const isBusy = plan?.isBusy;
@@ -287,6 +288,12 @@ function DayCard({ date, dayIndex, plan, recipe, sideRecipe, onClickDay }) {
             {recipe.nutrition?.calories > 0 && (
               <p className="text-xs text-orange-400 font-medium">{recipe.nutrition.calories} cal/serving</p>
             )}
+            <button
+              onClick={e => { e.stopPropagation(); onViewRecipe(recipe); }}
+              className="mt-0.5 self-start flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700 font-medium"
+            >
+              <BookOpen size={11} /> View recipe
+            </button>
           </div>
         ) : (
           <div className="flex items-center justify-center h-full py-2">
@@ -303,6 +310,7 @@ function DayCard({ date, dayIndex, plan, recipe, sideRecipe, onClickDay }) {
 
 export default function WeeklyCalendar({ mealPlan, recipes, weekStart, onWeekChange, onDayUpdate }) {
   const [pickerDay, setPickerDay] = useState(null);
+  const [viewingRecipe, setViewingRecipe] = useState(null);
   const weekDays = getWeekDays(weekStart);
 
   const totalCalories = weekDays.reduce((sum, date) => {
@@ -459,6 +467,7 @@ export default function WeeklyCalendar({ mealPlan, recipes, weekStart, onWeekCha
                 recipe={recipe}
                 sideRecipe={sideRecipe}
                 onClickDay={setPickerDay}
+                onViewRecipe={setViewingRecipe}
               />
               {(plan?.recipeId || plan?.isBusy || plan?.isDiningOut || plan?.isGrill) && (
                 <button
@@ -506,6 +515,14 @@ export default function WeeklyCalendar({ mealPlan, recipes, weekStart, onWeekCha
             ))}
           </div>
         </div>
+      )}
+
+      {/* Read-only recipe detail */}
+      {viewingRecipe && (
+        <RecipeDetail
+          recipe={viewingRecipe}
+          onClose={() => setViewingRecipe(null)}
+        />
       )}
 
       {/* Recipe picker modal */}
