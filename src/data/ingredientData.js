@@ -35,7 +35,7 @@ export const CATEGORIES = {
     keywords: [
       'chicken breast', 'chicken thigh', 'chicken thighs', 'chicken drumstick', 'whole chicken',
       'chicken',
-      'ground beef', 'beef stew meat', 'flank steak', 'skirt steak', 'ribeye', 'sirloin', 'brisket', 'short rib',
+      'ground beef', 'beef stew meat', 'flank steak', 'skirt steak', 'ribeye', 'sirloin', 'brisket', 'short rib', 'steak', 'ny strip', 'new york strip', 't-bone', 'porterhouse', 'chuck roast', 'chuck steak',
       'beef',
       'ground pork', 'pork chop', 'pork loin', 'pork tenderloin', 'pork shoulder', 'pork ribs',
       'pork',
