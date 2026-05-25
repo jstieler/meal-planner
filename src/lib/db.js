@@ -66,12 +66,19 @@ export async function deleteRecipeDb(id) {
 // ─── Meal Plan ──────────────────────────────────────────────────────────────
 
 function rowToPlan(row) {
+  // side_recipe_ids (new array column) takes precedence; fall back to legacy side_recipe_id
+  let sideRecipeIds = [];
+  if (Array.isArray(row.side_recipe_ids) && row.side_recipe_ids.length > 0) {
+    sideRecipeIds = row.side_recipe_ids;
+  } else if (row.side_recipe_id) {
+    sideRecipeIds = [row.side_recipe_id];
+  }
   return {
     recipeId: row.recipe_id || null,
     isBusy: row.is_busy || false,
     isDiningOut: row.is_dining_out || false,
     isGrill: row.is_grill || false,
-    sideRecipeId: row.side_recipe_id || null,
+    sideRecipeIds,
   };
 }
 
@@ -82,7 +89,7 @@ function planToRow(dateKey, plan) {
     is_busy: plan.isBusy || false,
     is_dining_out: plan.isDiningOut || false,
     is_grill: plan.isGrill || false,
-    side_recipe_id: plan.sideRecipeId || null,
+    side_recipe_ids: plan.sideRecipeIds || [],
   };
 }
 

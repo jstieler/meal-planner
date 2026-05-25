@@ -11,11 +11,12 @@ function formatTime(minutes) {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-function RecipePickerModal({ recipes, onSelect, onBusy, onGrill, onDineOut, onClose, currentRecipeId }) {
+function RecipePickerModal({ recipes, onSelect, onToggleSide, onBusy, onGrill, onDineOut, onClose, currentRecipeId, currentSideIds = [] }) {
   const [search, setSearch] = useState('');
   const [activeTag, setActiveTag] = useState(null);
   const [showFilter, setShowFilter] = useState(false);
 
+  const sideRecipes = recipes.filter(r => r.tags?.includes('side'));
   const allTags = [...new Set(recipes.flatMap(r => r.tags || []))].sort();
 
   const filtered = recipes.filter(r => {
@@ -137,6 +138,32 @@ function RecipePickerModal({ recipes, onSelect, onBusy, onGrill, onDineOut, onCl
             </button>
           </div>
 
+          {sideRecipes.length > 0 && (
+            <div className="mb-3">
+              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Side Dishes</p>
+              <div className="flex flex-wrap gap-1.5">
+                {sideRecipes.map(side => {
+                  const selected = currentSideIds.includes(side.id);
+                  return (
+                    <button
+                      key={side.id}
+                      onClick={() => onToggleSide(side.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        selected
+                          ? 'bg-green-100 border-green-400 text-green-700'
+                          : 'bg-white border-stone-200 text-stone-600 hover:border-green-300 hover:bg-green-50'
+                      }`}
+                    >
+                      <span>{side.emoji || '🥦'}</span>
+                      {side.name}
+                      {selected && <X size={11} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {filtered.length === 0 ? (
             <div className="text-center py-8 text-stone-400">
               <p className="text-sm">No recipes found</p>
@@ -186,7 +213,7 @@ function RecipePickerModal({ recipes, onSelect, onBusy, onGrill, onDineOut, onCl
   );
 }
 
-function DayCard({ date, dayIndex, plan, recipe, sideRecipe, onClickDay, onViewRecipe }) {
+function DayCard({ date, dayIndex, plan, recipe, sideRecipes, onClickDay, onViewRecipe }) {
   const dateKey = toDateKey(date);
   const today = isToday(date);
   const isBusy = plan?.isBusy;
@@ -279,10 +306,14 @@ function DayCard({ date, dayIndex, plan, recipe, sideRecipe, onClickDay, onViewR
               <span className="text-xl leading-none">{recipe.emoji || '🍽️'}</span>
               <p className="text-xs font-semibold text-stone-700 line-clamp-2 leading-tight">{recipe.name}</p>
             </div>
-            {sideRecipe && (
-              <div className="flex items-center gap-1.5 pl-0.5">
-                <span className="text-sm leading-none">{sideRecipe.emoji || '🥦'}</span>
-                <p className="text-xs text-stone-500 line-clamp-1 leading-tight">{sideRecipe.name}</p>
+            {sideRecipes?.length > 0 && (
+              <div className="flex flex-col gap-0.5 pl-0.5">
+                {sideRecipes.map(side => (
+                  <div key={side.id} className="flex items-center gap-1.5">
+                    <span className="text-sm leading-none">{side.emoji || '🥦'}</span>
+                    <p className="text-xs text-stone-500 line-clamp-1 leading-tight">{side.name}</p>
+                  </div>
+                ))}
               </div>
             )}
             {recipe.nutrition?.calories > 0 && (
@@ -349,8 +380,17 @@ export default function WeeklyCalendar({ mealPlan, recipes, weekStart, onWeekCha
     setPickerDay(null);
   };
 
+  const handleToggleSide = (sideId) => {
+    const plan = mealPlan[pickerDay] || {};
+    const current = plan.sideRecipeIds || [];
+    const updated = current.includes(sideId)
+      ? current.filter(id => id !== sideId)
+      : [...current, sideId];
+    onDayUpdate(pickerDay, { ...plan, sideRecipeIds: updated });
+  };
+
   const handleClearDay = (dateKey) => {
-    onDayUpdate(dateKey, { recipeId: null, isBusy: false, isDiningOut: false, isGrill: false, sideRecipeId: null });
+    onDayUpdate(dateKey, { recipeId: null, isBusy: false, isDiningOut: false, isGrill: false, sideRecipeIds: [] });
   };
 
   const handleSuggestAll = () => {
@@ -386,14 +426,14 @@ export default function WeeklyCalendar({ mealPlan, recipes, weekStart, onWeekCha
       const chosen = pick(pool);
       if (!chosen) continue;
 
-      let sideRecipeId = plan.sideRecipeId || null;
-      if (chosen.sideRequired && sides.length > 0) {
+      let sideRecipeIds = plan.sideRecipeIds || [];
+      if (chosen.sideRequired && sides.length > 0 && sideRecipeIds.length === 0) {
         const available = sides.filter(r => r.id !== chosen.id);
         const sidePick = (available.length > 0 ? available : sides)[Math.floor(Math.random() * (available.length > 0 ? available : sides).length)];
-        if (sidePick) sideRecipeId = sidePick.id;
+        if (sidePick) sideRecipeIds = [sidePick.id];
       }
 
-      onDayUpdate(dateKey, { ...plan, recipeId: chosen.id, sideRecipeId });
+      onDayUpdate(dateKey, { ...plan, recipeId: chosen.id, sideRecipeIds });
     }
   };
 
@@ -457,7 +497,7 @@ export default function WeeklyCalendar({ mealPlan, recipes, weekStart, onWeekCha
           const dateKey = toDateKey(date);
           const plan = mealPlan[dateKey];
           const recipe = plan?.recipeId ? recipes.find(r => r.id === plan.recipeId) : null;
-          const sideRecipe = plan?.sideRecipeId ? recipes.find(r => r.id === plan.sideRecipeId) : null;
+          const sideRecipes = (plan?.sideRecipeIds || []).map(id => recipes.find(r => r.id === id)).filter(Boolean);
           return (
             <div key={dateKey} className="relative group">
               <DayCard
@@ -465,7 +505,7 @@ export default function WeeklyCalendar({ mealPlan, recipes, weekStart, onWeekCha
                 dayIndex={i}
                 plan={plan}
                 recipe={recipe}
-                sideRecipe={sideRecipe}
+                sideRecipes={sideRecipes}
                 onClickDay={setPickerDay}
                 onViewRecipe={setViewingRecipe}
               />
@@ -530,7 +570,9 @@ export default function WeeklyCalendar({ mealPlan, recipes, weekStart, onWeekCha
         <RecipePickerModal
           recipes={recipes}
           currentRecipeId={mealPlan[pickerDay]?.recipeId}
+          currentSideIds={mealPlan[pickerDay]?.sideRecipeIds || []}
           onSelect={handleSelectRecipe}
+          onToggleSide={handleToggleSide}
           onBusy={handleMarkBusy}
           onGrill={handleMarkGrill}
           onDineOut={handleDineOut}
