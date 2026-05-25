@@ -98,6 +98,7 @@ function planToRow(dateKey, plan) {
 export async function fetchMealPlan() {
   const { data, error } = await supabase.from('meal_plan').select('*');
   if (error) throw error;
+  console.log('[db] fetchMealPlan raw rows:', data);
   const plan = {};
   for (const row of (data || [])) {
     plan[row.date_key] = rowToPlan(row);
@@ -106,7 +107,10 @@ export async function fetchMealPlan() {
 }
 
 export async function upsertMealPlanDay(dateKey, plan) {
-  const { error } = await supabase.from('meal_plan').upsert(planToRow(dateKey, plan));
+  const row = planToRow(dateKey, plan);
+  console.log('[db] upsertMealPlanDay writing:', row);
+  const { data, error } = await supabase.from('meal_plan').upsert(row).select();
+  console.log('[db] upsertMealPlanDay result:', { data, error });
   if (error) throw error;
 }
 
