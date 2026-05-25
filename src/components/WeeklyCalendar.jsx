@@ -332,8 +332,19 @@ function DayCard({ date, dayIndex, plan, recipe, sideRecipes, onClickDay, onView
           <div className="flex flex-col gap-1.5">
             <div className="flex items-start gap-2">
               <span className="text-xl leading-none">{recipe.emoji || '🍽️'}</span>
-              <p className="text-xs font-semibold text-stone-700 leading-tight">{recipe.name}</p>
+              <div>
+                <p className="text-xs font-semibold text-stone-700 leading-tight">{recipe.name}</p>
+                {recipe.nutrition?.calories > 0 && (
+                  <p className="text-xs text-orange-400 font-medium">{recipe.nutrition.calories} cal/serving</p>
+                )}
+              </div>
             </div>
+            <button
+              onClick={e => { e.stopPropagation(); onViewRecipe(recipe); }}
+              className="self-start flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700 font-medium"
+            >
+              <BookOpen size={11} /> View recipe
+            </button>
             {sideRecipes?.length > 0 && (
               <div className="flex flex-col gap-1 pl-0.5">
                 {sideRecipes.map(side => (
@@ -352,15 +363,6 @@ function DayCard({ date, dayIndex, plan, recipe, sideRecipes, onClickDay, onView
                 ))}
               </div>
             )}
-            {recipe.nutrition?.calories > 0 && (
-              <p className="text-xs text-orange-400 font-medium">{recipe.nutrition.calories} cal/serving</p>
-            )}
-            <button
-              onClick={e => { e.stopPropagation(); onViewRecipe(recipe); }}
-              className="mt-0.5 self-start flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700 font-medium"
-            >
-              <BookOpen size={11} /> View recipe
-            </button>
           </div>
         ) : (
           <div className="flex items-center justify-center h-full py-2">
