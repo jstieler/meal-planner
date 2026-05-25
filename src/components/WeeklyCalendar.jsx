@@ -285,9 +285,17 @@ function DayCard({ date, dayIndex, plan, recipe, sideRecipes, onClickDay, onView
               </div>
             )}
             {sideRecipes?.length > 0 && sideRecipes.map(side => (
-              <div key={side.id} className="flex items-center gap-1.5 pl-0.5">
-                <span className="text-sm leading-none">{side.emoji || '🥦'}</span>
-                <p className="text-xs text-stone-500 leading-tight">{side.name}</p>
+              <div key={side.id} className="flex flex-col gap-0.5 pl-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm leading-none">{side.emoji || '🥦'}</span>
+                  <p className="text-xs text-stone-500 leading-tight">{side.name}</p>
+                </div>
+                <button
+                  onClick={e => { e.stopPropagation(); onViewRecipe(side); }}
+                  className="self-start flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700 font-medium pl-5"
+                >
+                  <BookOpen size={11} /> View recipe
+                </button>
               </div>
             ))}
           </div>
@@ -306,9 +314,17 @@ function DayCard({ date, dayIndex, plan, recipe, sideRecipes, onClickDay, onView
               </div>
             )}
             {sideRecipes?.length > 0 && sideRecipes.map(side => (
-              <div key={side.id} className="flex items-center gap-1.5 pl-0.5">
-                <span className="text-sm leading-none">{side.emoji || '🥦'}</span>
-                <p className="text-xs text-stone-500 leading-tight">{side.name}</p>
+              <div key={side.id} className="flex flex-col gap-0.5 pl-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm leading-none">{side.emoji || '🥦'}</span>
+                  <p className="text-xs text-stone-500 leading-tight">{side.name}</p>
+                </div>
+                <button
+                  onClick={e => { e.stopPropagation(); onViewRecipe(side); }}
+                  className="self-start flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700 font-medium pl-5"
+                >
+                  <BookOpen size={11} /> View recipe
+                </button>
               </div>
             ))}
           </div>
@@ -319,11 +335,19 @@ function DayCard({ date, dayIndex, plan, recipe, sideRecipes, onClickDay, onView
               <p className="text-xs font-semibold text-stone-700 leading-tight">{recipe.name}</p>
             </div>
             {sideRecipes?.length > 0 && (
-              <div className="flex flex-col gap-0.5 pl-0.5">
+              <div className="flex flex-col gap-1 pl-0.5">
                 {sideRecipes.map(side => (
-                  <div key={side.id} className="flex items-center gap-1.5">
-                    <span className="text-sm leading-none">{side.emoji || '🥦'}</span>
-                    <p className="text-xs text-stone-500 line-clamp-1 leading-tight">{side.name}</p>
+                  <div key={side.id} className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm leading-none">{side.emoji || '🥦'}</span>
+                      <p className="text-xs text-stone-500 leading-tight">{side.name}</p>
+                    </div>
+                    <button
+                      onClick={e => { e.stopPropagation(); onViewRecipe(side); }}
+                      className="self-start flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700 font-medium pl-5"
+                    >
+                      <BookOpen size={11} /> View recipe
+                    </button>
                   </div>
                 ))}
               </div>
