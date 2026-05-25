@@ -274,17 +274,9 @@ function DayCard({ date, dayIndex, plan, recipe, sideRecipes, onClickDay, onView
           <div className="flex flex-col gap-1">
             <p className="text-xs font-semibold text-purple-600">Busy Night</p>
             {recipe ? (
-              <div className="flex flex-col gap-0.5">
-                <div className="flex items-start gap-1.5">
-                  <span className="text-base leading-none">{recipe.emoji || '🍽️'}</span>
-                  <p className="text-xs text-purple-700 leading-tight">{recipe.name}</p>
-                </div>
-                {sideRecipes?.length > 0 && sideRecipes.map(side => (
-                  <div key={side.id} className="flex items-center gap-1.5 pl-0.5">
-                    <span className="text-sm leading-none">{side.emoji || '🥦'}</span>
-                    <p className="text-xs text-stone-500 leading-tight">{side.name}</p>
-                  </div>
-                ))}
+              <div className="flex items-start gap-1.5">
+                <span className="text-base leading-none">{recipe.emoji || '🍽️'}</span>
+                <p className="text-xs text-purple-700 leading-tight">{recipe.name}</p>
               </div>
             ) : (
               <div className="flex items-center gap-1.5">
@@ -292,22 +284,20 @@ function DayCard({ date, dayIndex, plan, recipe, sideRecipes, onClickDay, onView
                 <p className="text-xs text-purple-400">Slow cooker suggested</p>
               </div>
             )}
+            {sideRecipes?.length > 0 && sideRecipes.map(side => (
+              <div key={side.id} className="flex items-center gap-1.5 pl-0.5">
+                <span className="text-sm leading-none">{side.emoji || '🥦'}</span>
+                <p className="text-xs text-stone-500 leading-tight">{side.name}</p>
+              </div>
+            ))}
           </div>
         ) : isGrill ? (
           <div className="flex flex-col gap-1">
             <p className="text-xs font-semibold text-red-600">Grill Night</p>
             {recipe ? (
-              <div className="flex flex-col gap-0.5">
-                <div className="flex items-start gap-1.5">
-                  <span className="text-base leading-none">{recipe.emoji || '🍽️'}</span>
-                  <p className="text-xs text-red-700 leading-tight">{recipe.name}</p>
-                </div>
-                {sideRecipes?.length > 0 && sideRecipes.map(side => (
-                  <div key={side.id} className="flex items-center gap-1.5 pl-0.5">
-                    <span className="text-sm leading-none">{side.emoji || '🥦'}</span>
-                    <p className="text-xs text-stone-500 leading-tight">{side.name}</p>
-                  </div>
-                ))}
+              <div className="flex items-start gap-1.5">
+                <span className="text-base leading-none">{recipe.emoji || '🍽️'}</span>
+                <p className="text-xs text-red-700 leading-tight">{recipe.name}</p>
               </div>
             ) : (
               <div className="flex items-center gap-1.5">
@@ -315,6 +305,12 @@ function DayCard({ date, dayIndex, plan, recipe, sideRecipes, onClickDay, onView
                 <p className="text-xs text-red-400">Grill recipe suggested</p>
               </div>
             )}
+            {sideRecipes?.length > 0 && sideRecipes.map(side => (
+              <div key={side.id} className="flex items-center gap-1.5 pl-0.5">
+                <span className="text-sm leading-none">{side.emoji || '🥦'}</span>
+                <p className="text-xs text-stone-500 leading-tight">{side.name}</p>
+              </div>
+            ))}
           </div>
         ) : hasRecipe ? (
           <div className="flex flex-col gap-1.5">
