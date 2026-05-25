@@ -119,7 +119,10 @@ export default function App() {
         upsertRecipe({ ...recipe, usageCount: (recipe.usageCount || 0) + 1, lastUsed: new Date().toISOString() }).catch(console.error);
       }
     }
-    upsertMealPlanDay(dateKey, planData).catch(console.error);
+    upsertMealPlanDay(dateKey, planData).catch(err => {
+      console.error('Failed to save day plan:', err);
+      alert(`Failed to save: ${err?.message || err}`);
+    });
   };
 
   const handleToggleShoppingItem = (itemId) => {

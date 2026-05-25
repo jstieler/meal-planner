@@ -83,13 +83,15 @@ function rowToPlan(row) {
 }
 
 function planToRow(dateKey, plan) {
+  const sideRecipeIds = plan.sideRecipeIds || [];
   return {
     date_key: dateKey,
     recipe_id: plan.recipeId || null,
     is_busy: plan.isBusy || false,
     is_dining_out: plan.isDiningOut || false,
     is_grill: plan.isGrill || false,
-    side_recipe_ids: plan.sideRecipeIds || [],
+    side_recipe_id: sideRecipeIds[0] || null,
+    side_recipe_ids: sideRecipeIds,
   };
 }
 
